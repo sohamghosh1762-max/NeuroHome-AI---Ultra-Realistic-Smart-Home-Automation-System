@@ -1616,7 +1616,7 @@ function hideFeedback() {
 /* ═══════════════════════════════════════════════════════
    LOGIN HANDLER — backend auth
 ═══════════════════════════════════════════════════════ */
-const API_BASE = 'http://localhost:8000';
+const API_BASE = 'https://neurohome-ai-ultra-realistic-smart-home.onrender.com';
 
 async function handleLogin(event) {
 
@@ -1642,7 +1642,7 @@ async function handleLogin(event) {
     try {
 
         const response = await fetch(
-            "http://localhost:8000/api/auth/login",
+            "https://neurohome-ai-ultra-realistic-smart-home.onrender.com/api/auth/login",
             {
                 method: "POST",
                 headers: {
