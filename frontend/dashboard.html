@@ -1414,7 +1414,11 @@ socket.on("deviceUpdated", () => {
 
 });
 
-fetchDevices();
+window.addEventListener("DOMContentLoaded", () => {
+
+    fetchDevices();
+
+});
 
 </script>
 
