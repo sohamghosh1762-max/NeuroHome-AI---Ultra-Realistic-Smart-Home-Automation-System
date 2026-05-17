@@ -786,6 +786,7 @@ onclick="startVoiceRecognition()">
 </button>
 
 </div>
+</div> 
 
     <div>
       <div class="sidebar-section-title">Mood Lighting</div>
@@ -1284,7 +1285,7 @@ async function fetchDevices() {
     try {
 
         const response =
-        await fetch("http://localhost:8000/api/devices");
+        await fetch("https://neurohome-ai-ultra-realistic-smart-home.onrender.com/api/devices");
 
         const devices = await response.json();
 
@@ -1378,7 +1379,7 @@ async function toggleDevice(id, currentStatus) {
     try {
 
         await fetch(
-            `http://localhost:8000/api/devices/${id}`,
+            `https://neurohome-ai-ultra-realistic-smart-home.onrender.com/api/devices/${id}`,
             {
                 method: "PUT",
 
