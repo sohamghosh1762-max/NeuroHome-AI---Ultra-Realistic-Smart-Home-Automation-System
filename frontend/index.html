@@ -1,0 +1,1693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NeuroHome AI – Smart Home Ecosystem</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;700;900&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+:root {
+  --neon-blue: #00d4ff;
+  --neon-purple: #a855f7;
+  --neon-cyan: #06ffd4;
+  --neon-pink: #ff2d78;
+  --neon-amber: #ffb700;
+  --bg-void: #030509;
+  --bg-deep: #060c14;
+  --bg-card: rgba(6, 18, 36, 0.72);
+  --bg-card2: rgba(10, 24, 48, 0.6);
+  --glass-border: rgba(0, 212, 255, 0.18);
+  --glass-border2: rgba(168, 85, 247, 0.22);
+  --text-primary: #e8f4ff;
+  --text-secondary: #7eb8d4;
+  --text-muted: #3a6080;
+  --font-display: 'Orbitron', monospace;
+  --font-ui: 'Rajdhani', sans-serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-ui);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ── ANIMATED BACKGROUND ── */
+.bg-grid {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    linear-gradient(rgba(0,212,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: gridDrift 40s linear infinite;
+}
+@keyframes gridDrift { to { background-position: 60px 60px; } }
+
+.bg-glow1 {
+  position: fixed; top: -20%; left: -10%; width: 60vw; height: 60vh;
+  background: radial-gradient(ellipse, rgba(0,212,255,0.07) 0%, transparent 70%);
+  pointer-events: none; z-index: 0; animation: pulse1 8s ease-in-out infinite alternate;
+}
+.bg-glow2 {
+  position: fixed; bottom: -20%; right: -10%; width: 50vw; height: 50vh;
+  background: radial-gradient(ellipse, rgba(168,85,247,0.08) 0%, transparent 70%);
+  pointer-events: none; z-index: 0; animation: pulse2 10s ease-in-out infinite alternate;
+}
+@keyframes pulse1 { from {opacity:.5} to {opacity:1} }
+@keyframes pulse2 { from {opacity:.4} to {opacity:.9} }
+
+/* Scanline overlay */
+.scanlines {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px);
+}
+
+/* Floating particles */
+.particles { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.particle {
+  position: absolute; width: 2px; height: 2px; border-radius: 50%;
+  background: var(--neon-cyan); opacity: 0;
+  animation: float linear infinite;
+}
+@keyframes float {
+  0% { transform: translateY(100vh) translateX(0); opacity: 0; }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.4; }
+  100% { transform: translateY(-10vh) translateX(40px); opacity: 0; }
+}
+
+/* ── LAYOUT ── */
+.shell { position: relative; z-index: 1; display: flex; flex-direction: column; min-height: 100vh; }
+
+/* ── TOP NAV ── */
+.topnav {
+  display: flex; align-items: center; gap: 20px;
+  padding: 0 28px; height: 60px;
+  background: rgba(3,5,9,0.9);
+  border-bottom: 1px solid var(--glass-border);
+  backdrop-filter: blur(20px);
+  position: sticky; top: 0; z-index: 100;
+}
+.logo {
+  display: flex; align-items: center; gap: 10px;
+  font-family: var(--font-display); font-size: 15px; font-weight: 700;
+  color: var(--neon-blue); letter-spacing: 2px; white-space: nowrap;
+}
+.logo-orb {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: conic-gradient(var(--neon-blue), var(--neon-purple), var(--neon-cyan), var(--neon-blue));
+  animation: spin 4s linear infinite;
+  box-shadow: 0 0 15px var(--neon-blue);
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.nav-tabs { display: flex; gap: 4px; margin-left: 24px; }
+.nav-tab {
+  padding: 6px 16px; border-radius: 6px; font-size: 13px; font-weight: 500;
+  letter-spacing: 1px; color: var(--text-secondary); cursor: pointer;
+  border: 1px solid transparent; transition: all 0.3s;
+  font-family: var(--font-ui); background: none; text-transform: uppercase;
+}
+.nav-tab:hover { color: var(--neon-blue); border-color: var(--glass-border); }
+.nav-tab.active {
+  color: var(--neon-blue); background: rgba(0,212,255,0.08);
+  border-color: var(--glass-border); box-shadow: 0 0 12px rgba(0,212,255,0.15);
+}
+
+.nav-right { margin-left: auto; display: flex; align-items: center; gap: 16px; }
+.sys-time {
+  font-family: var(--font-display); font-size: 13px; color: var(--neon-cyan);
+  letter-spacing: 2px; min-width: 80px; text-align: right;
+}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: #00ff88; box-shadow: 0 0 8px #00ff88; animation: blink 2s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.4} }
+.status-label { font-size: 11px; color: #00ff88; letter-spacing: 1px; }
+
+.security-btn {
+  padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+  border: 1px solid rgba(255,45,120,0.4); color: #ff2d78; cursor: pointer;
+  background: rgba(255,45,120,0.08); letter-spacing: 1px; text-transform: uppercase;
+  font-family: var(--font-ui); transition: all 0.3s;
+}
+.security-btn:hover { background: rgba(255,45,120,0.18); box-shadow: 0 0 16px rgba(255,45,120,0.3); }
+
+/* ── MAIN GRID ── */
+.main { display: grid; grid-template-columns: 280px 1fr 300px; gap: 0; flex: 1; }
+
+/* ── SIDEBAR ── */
+.sidebar {
+  padding: 20px 16px; border-right: 1px solid var(--glass-border);
+  background: rgba(3,8,18,0.7); display: flex; flex-direction: column; gap: 16px;
+  backdrop-filter: blur(10px);
+}
+
+.sidebar-section-title {
+  font-size: 10px; font-weight: 600; letter-spacing: 3px; color: var(--text-muted);
+  text-transform: uppercase; padding: 0 4px 8px; border-bottom: 1px solid rgba(0,212,255,0.08);
+}
+
+/* ── ROOM SELECTOR ── */
+.room-list { display: flex; flex-direction: column; gap: 6px; }
+.room-item {
+  display: flex; align-items: center; gap: 12px; padding: 10px 12px;
+  border-radius: 8px; cursor: pointer; transition: all 0.25s;
+  border: 1px solid transparent; position: relative; overflow: hidden;
+}
+.room-item::before {
+  content: ''; position: absolute; inset: 0; opacity: 0;
+  background: linear-gradient(90deg, rgba(0,212,255,0.06), transparent);
+  transition: opacity 0.3s;
+}
+.room-item:hover::before, .room-item.active::before { opacity: 1; }
+.room-item.active { border-color: rgba(0,212,255,0.25); background: rgba(0,212,255,0.06); }
+.room-item:hover { border-color: rgba(0,212,255,0.12); }
+.room-icon {
+  width: 32px; height: 32px; border-radius: 8px; display: flex;
+  align-items: center; justify-content: center; font-size: 15px;
+  background: rgba(0,212,255,0.08); border: 1px solid var(--glass-border);
+  flex-shrink: 0;
+}
+.room-item.active .room-icon { background: rgba(0,212,255,0.15); box-shadow: 0 0 10px rgba(0,212,255,0.2); }
+.room-info { flex: 1; min-width: 0; }
+.room-name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
+.room-item.active .room-name { color: var(--neon-blue); }
+.room-meta { font-size: 11px; color: var(--text-muted); }
+.room-badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; background: rgba(0,212,255,0.12); color: var(--neon-blue); font-weight: 600; }
+
+/* ── QUICK STATS ── */
+.quick-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat-card {
+  padding: 12px; border-radius: 10px;
+  background: rgba(0,212,255,0.04); border: 1px solid var(--glass-border);
+  text-align: center; transition: all 0.3s; cursor: default;
+}
+.stat-card:hover { background: rgba(0,212,255,0.08); box-shadow: 0 0 15px rgba(0,212,255,0.1); }
+.stat-val { font-family: var(--font-display); font-size: 20px; font-weight: 700; color: var(--neon-cyan); }
+.stat-label { font-size: 10px; color: var(--text-muted); letter-spacing: 1px; margin-top: 2px; }
+.stat-card.purple .stat-val { color: var(--neon-purple); }
+.stat-card.amber .stat-val { color: var(--neon-amber); }
+.stat-card.pink .stat-val { color: var(--neon-pink); }
+
+/* ── WEATHER PANEL ── */
+.weather-panel {
+  padding: 16px; border-radius: 12px;
+  background: linear-gradient(135deg, rgba(0,212,255,0.06), rgba(168,85,247,0.06));
+  border: 1px solid var(--glass-border);
+}
+.weather-top { display: flex; align-items: center; justify-content: space-between; }
+.weather-temp { font-family: var(--font-display); font-size: 30px; font-weight: 700; color: var(--text-primary); }
+.weather-icon { font-size: 32px; }
+.weather-desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.weather-extra { display: flex; gap: 12px; margin-top: 10px; }
+.weather-item { font-size: 11px; color: var(--text-muted); }
+.weather-item span { color: var(--neon-cyan); font-weight: 600; }
+
+/* ── AI ORB ── */
+.ai-orb-section { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 16px; border-radius: 12px; border: 1px solid var(--glass-border2); background: rgba(168,85,247,0.04); }
+.ai-orb-wrap { position: relative; width: 70px; height: 70px; }
+.ai-orb {
+  width: 70px; height: 70px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, rgba(200,150,255,0.9), rgba(100,50,200,0.8), rgba(50,0,120,0.9));
+  box-shadow: 0 0 20px rgba(168,85,247,0.5), 0 0 40px rgba(168,85,247,0.2), inset 0 0 20px rgba(255,255,255,0.1);
+  animation: orbFloat 4s ease-in-out infinite, orbPulse 2s ease-in-out infinite alternate;
+  cursor: pointer; position: relative; z-index: 1;
+}
+.ai-orb::before {
+  content: ''; position: absolute; inset: -3px; border-radius: 50%;
+  border: 2px solid transparent;
+  border-top-color: var(--neon-purple); border-right-color: var(--neon-cyan);
+  animation: spin 2s linear infinite;
+}
+@keyframes orbFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-5px)} }
+@keyframes orbPulse { from{box-shadow:0 0 20px rgba(168,85,247,0.5),0 0 40px rgba(168,85,247,0.2)} to{box-shadow:0 0 30px rgba(168,85,247,0.8),0 0 60px rgba(168,85,247,0.3)} }
+.ai-orb-rings {
+  position: absolute; inset: -12px; border-radius: 50%;
+  border: 1px solid rgba(168,85,247,0.2);
+  animation: ringPulse 3s ease-in-out infinite;
+}
+.ai-orb-rings::before {
+  content: ''; position: absolute; inset: -12px; border-radius: 50%;
+  border: 1px solid rgba(0,212,255,0.1);
+  animation: ringPulse 3s ease-in-out infinite 0.5s;
+}
+@keyframes ringPulse { 0%{transform:scale(1);opacity:0.5} 100%{transform:scale(1.3);opacity:0} }
+.ai-name { font-family: var(--font-display); font-size: 12px; font-weight: 700; color: var(--neon-purple); letter-spacing: 3px; }
+.ai-status-text { font-size: 11px; color: var(--text-secondary); text-align: center; }
+.ai-waveform { display: flex; align-items: center; gap: 2px; height: 24px; }
+.wave-bar {
+  width: 3px; border-radius: 2px; background: var(--neon-purple);
+  animation: waveBounce 0.8s ease-in-out infinite;
+}
+.wave-bar:nth-child(2){animation-delay:.1s;} .wave-bar:nth-child(3){animation-delay:.2s;}
+.wave-bar:nth-child(4){animation-delay:.3s;} .wave-bar:nth-child(5){animation-delay:.15s;}
+.wave-bar:nth-child(6){animation-delay:.25s;} .wave-bar:nth-child(7){animation-delay:.05s;}
+@keyframes waveBounce { 0%,100%{height:6px;opacity:.4} 50%{height:20px;opacity:1} }
+.ai-input-row { display: flex; gap: 8px; width: 100%; }
+.ai-input {
+  flex: 1; padding: 7px 10px; border-radius: 8px; font-size: 12px;
+  background: rgba(168,85,247,0.08); border: 1px solid rgba(168,85,247,0.25);
+  color: var(--text-primary); font-family: var(--font-ui); outline: none;
+}
+.ai-input::placeholder { color: var(--text-muted); }
+.ai-send {
+  padding: 7px 12px; border-radius: 8px; background: rgba(168,85,247,0.2);
+  border: 1px solid rgba(168,85,247,0.4); color: var(--neon-purple);
+  font-size: 14px; cursor: pointer; transition: all 0.3s;
+}
+.ai-send:hover { background: rgba(168,85,247,0.35); box-shadow: 0 0 15px rgba(168,85,247,0.3); }
+
+/* ── CENTER PANEL ── */
+.center { padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+
+/* ── STAT BAR ── */
+.stat-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.stat-bar-card {
+  padding: 14px 16px; border-radius: 12px;
+  background: var(--bg-card); border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px); position: relative; overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.3s; cursor: default;
+}
+.stat-bar-card::after {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent, var(--neon-blue)), transparent);
+}
+.stat-bar-card:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+.stat-bar-card.purple { --accent: var(--neon-purple); }
+.stat-bar-card.cyan { --accent: var(--neon-cyan); }
+.stat-bar-card.amber { --accent: var(--neon-amber); }
+.stat-bar-card.pink { --accent: var(--neon-pink); }
+.sbc-label { font-size: 10px; letter-spacing: 2px; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px; }
+.sbc-val { font-family: var(--font-display); font-size: 26px; font-weight: 700; color: var(--neon-blue); line-height: 1; }
+.stat-bar-card.purple .sbc-val { color: var(--neon-purple); }
+.stat-bar-card.cyan .sbc-val { color: var(--neon-cyan); }
+.stat-bar-card.amber .sbc-val { color: var(--neon-amber); }
+.stat-bar-card.pink .sbc-val { color: var(--neon-pink); }
+.sbc-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+/* ── DEVICE GRID ── */
+.section-header { display: flex; align-items: center; justify-content: space-between; }
+.section-title { font-family: var(--font-display); font-size: 13px; font-weight: 500; color: var(--text-primary); letter-spacing: 2px; text-transform: uppercase; }
+.section-count { font-size: 11px; color: var(--text-secondary); padding: 3px 10px; border-radius: 10px; background: rgba(0,212,255,0.08); border: 1px solid var(--glass-border); }
+
+.device-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+
+/* ── DEVICE CARD ── */
+.device-card {
+  padding: 16px; border-radius: 14px;
+  background: var(--bg-card); border: 1px solid var(--glass-border);
+  backdrop-filter: blur(16px); position: relative; overflow: hidden;
+  cursor: pointer; transition: all 0.3s; user-select: none;
+}
+.device-card::before {
+  content: ''; position: absolute; inset: 0; opacity: 0;
+  background: radial-gradient(circle at 50% 0%, rgba(0,212,255,0.08), transparent 70%);
+  transition: opacity 0.3s;
+}
+.device-card:hover::before { opacity: 1; }
+.device-card:hover { border-color: rgba(0,212,255,0.3); transform: translateY(-3px); box-shadow: 0 12px 35px rgba(0,0,0,0.5), 0 0 25px rgba(0,212,255,0.08); }
+.device-card.on { border-color: rgba(0,212,255,0.35); background: rgba(0,212,255,0.05); }
+.device-card.on::after { content: ''; position: absolute; inset: -1px; border-radius: 14px; border: 1px solid rgba(0,212,255,0.2); box-shadow: inset 0 0 20px rgba(0,212,255,0.04); pointer-events: none; }
+
+.device-card.purple-device { --dc: var(--neon-purple); }
+.device-card.purple-device:hover { border-color: rgba(168,85,247,0.3); box-shadow: 0 12px 35px rgba(0,0,0,0.5), 0 0 25px rgba(168,85,247,0.08); }
+.device-card.purple-device.on { border-color: rgba(168,85,247,0.35); background: rgba(168,85,247,0.05); }
+.device-card.amber-device { --dc: var(--neon-amber); }
+.device-card.amber-device:hover { border-color: rgba(255,183,0,0.3); box-shadow: 0 12px 35px rgba(0,0,0,0.5), 0 0 25px rgba(255,183,0,0.08); }
+.device-card.amber-device.on { border-color: rgba(255,183,0,0.35); background: rgba(255,183,0,0.05); }
+.device-card.pink-device { --dc: var(--neon-pink); }
+.device-card.pink-device:hover { border-color: rgba(255,45,120,0.3); box-shadow: 0 12px 35px rgba(0,0,0,0.5), 0 0 25px rgba(255,45,120,0.08); }
+.device-card.pink-device.on { border-color: rgba(255,45,120,0.35); background: rgba(255,45,120,0.05); }
+
+.dc-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 12px; }
+.dc-icon { font-size: 26px; line-height: 1; }
+.dc-toggle {
+  width: 36px; height: 20px; border-radius: 10px; position: relative;
+  background: rgba(255,255,255,0.08); border: 1px solid var(--glass-border);
+  cursor: pointer; transition: all 0.3s; flex-shrink: 0;
+}
+.dc-toggle.on { background: rgba(0,212,255,0.2); border-color: var(--neon-blue); box-shadow: 0 0 10px rgba(0,212,255,0.3); }
+.device-card.purple-device .dc-toggle.on { background: rgba(168,85,247,0.2); border-color: var(--neon-purple); box-shadow: 0 0 10px rgba(168,85,247,0.3); }
+.device-card.amber-device .dc-toggle.on { background: rgba(255,183,0,0.2); border-color: var(--neon-amber); box-shadow: 0 0 10px rgba(255,183,0,0.3); }
+.device-card.pink-device .dc-toggle.on { background: rgba(255,45,120,0.2); border-color: var(--neon-pink); box-shadow: 0 0 10px rgba(255,45,120,0.3); }
+.dc-toggle::after {
+  content: ''; position: absolute; top: 2px; left: 2px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--text-muted); transition: all 0.3s;
+}
+.dc-toggle.on::after { left: 18px; background: var(--neon-blue); box-shadow: 0 0 8px var(--neon-blue); }
+.device-card.purple-device .dc-toggle.on::after { background: var(--neon-purple); box-shadow: 0 0 8px var(--neon-purple); }
+.device-card.amber-device .dc-toggle.on::after { background: var(--neon-amber); box-shadow: 0 0 8px var(--neon-amber); }
+.device-card.pink-device .dc-toggle.on::after { background: var(--neon-pink); box-shadow: 0 0 8px var(--neon-pink); }
+
+.dc-name { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 2px; }
+.dc-room { font-size: 11px; color: var(--text-muted); }
+.dc-status { font-size: 11px; color: var(--neon-blue); margin-top: 4px; font-weight: 500; }
+.device-card.off .dc-status { color: var(--text-muted); }
+.device-card.purple-device .dc-status { color: var(--neon-purple); }
+.device-card.amber-device .dc-status { color: var(--neon-amber); }
+.device-card.pink-device .dc-status { color: var(--neon-pink); }
+
+/* Power ring */
+.dc-ring-wrap { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+.dc-ring { position: relative; width: 38px; height: 38px; }
+.dc-ring svg { transform: rotate(-90deg); }
+.dc-ring-track { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 3; }
+.dc-ring-fill { fill: none; stroke: var(--neon-blue); stroke-width: 3; stroke-linecap: round; transition: stroke-dashoffset 0.8s cubic-bezier(.4,0,.2,1); }
+.device-card.purple-device .dc-ring-fill { stroke: var(--neon-purple); }
+.device-card.amber-device .dc-ring-fill { stroke: var(--neon-amber); }
+.device-card.pink-device .dc-ring-fill { stroke: var(--neon-pink); }
+.dc-ring-val { font-family: var(--font-display); font-size: 9px; font-weight: 700; fill: var(--text-secondary); }
+.dc-power-info { font-size: 11px; color: var(--text-muted); }
+.dc-power-val { font-size: 13px; font-weight: 600; color: var(--neon-cyan); }
+
+/* Glow animation for active devices */
+.device-card.on .dc-icon { filter: drop-shadow(0 0 8px var(--neon-blue)); animation: iconGlow 2s ease-in-out infinite alternate; }
+.device-card.purple-device.on .dc-icon { filter: drop-shadow(0 0 8px var(--neon-purple)); }
+.device-card.amber-device.on .dc-icon { filter: drop-shadow(0 0 8px var(--neon-amber)); }
+.device-card.pink-device.on .dc-icon { filter: drop-shadow(0 0 8px var(--neon-pink)); }
+@keyframes iconGlow { from{filter:drop-shadow(0 0 5px var(--neon-blue))} to{filter:drop-shadow(0 0 14px var(--neon-blue))} }
+
+/* Slider */
+.dc-slider-wrap { margin-top: 10px; display: flex; align-items: center; gap: 8px; }
+.dc-slider {
+  flex: 1; appearance: none; height: 3px; border-radius: 2px; outline: none;
+  background: linear-gradient(to right, var(--neon-blue) var(--val, 70%), rgba(255,255,255,0.08) var(--val, 70%));
+  cursor: pointer;
+}
+.dc-slider::-webkit-slider-thumb {
+  appearance: none; width: 12px; height: 12px; border-radius: 50%;
+  background: var(--neon-blue); box-shadow: 0 0 8px var(--neon-blue); cursor: pointer;
+}
+.device-card.purple-device .dc-slider { background: linear-gradient(to right, var(--neon-purple) var(--val, 70%), rgba(255,255,255,0.08) var(--val, 70%)); }
+.device-card.purple-device .dc-slider::-webkit-slider-thumb { background: var(--neon-purple); box-shadow: 0 0 8px var(--neon-purple); }
+.device-card.amber-device .dc-slider { background: linear-gradient(to right, var(--neon-amber) var(--val, 70%), rgba(255,255,255,0.08) var(--val, 70%)); }
+.device-card.amber-device .dc-slider::-webkit-slider-thumb { background: var(--neon-amber); box-shadow: 0 0 8px var(--neon-amber); }
+.dc-slider-val { font-size: 11px; font-family: var(--font-display); color: var(--text-secondary); min-width: 30px; text-align: right; }
+
+/* Fan animation */
+.fan-icon { display: inline-block; transition: all 0.5s; }
+.device-card.on .fan-icon { animation: fanSpin 1s linear infinite; }
+@keyframes fanSpin { to { transform: rotate(360deg); } }
+
+/* ── ENERGY CHART ── */
+.energy-panel {
+  padding: 18px; border-radius: 14px;
+  background: var(--bg-card); border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px);
+}
+.energy-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.energy-kpi { display: flex; gap: 20px; }
+.ekpi { text-align: center; }
+.ekpi-val { font-family: var(--font-display); font-size: 18px; font-weight: 700; color: var(--neon-cyan); }
+.ekpi-label { font-size: 10px; color: var(--text-muted); letter-spacing: 1px; }
+.chart-wrap { position: relative; height: 130px; }
+
+/* ── RIGHT PANEL ── */
+.right-panel { border-left: 1px solid var(--glass-border); background: rgba(3,8,18,0.7); display: flex; flex-direction: column; gap: 0; backdrop-filter: blur(10px); }
+.right-section { padding: 18px 16px; border-bottom: 1px solid var(--glass-border); }
+
+/* ── SECURITY ── */
+.security-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.cam-card {
+  border-radius: 10px; overflow: hidden; position: relative;
+  background: #040a10; border: 1px solid var(--glass-border);
+  aspect-ratio: 4/3; cursor: pointer; transition: all 0.3s;
+}
+.cam-card:hover { border-color: rgba(0,212,255,0.3); box-shadow: 0 0 15px rgba(0,212,255,0.1); }
+.cam-feed {
+  width: 100%; height: 100%;
+  background: linear-gradient(135deg, #060f1a 0%, #0a1628 50%, #060f1a 100%);
+  position: relative; overflow: hidden;
+}
+/* Animated scan effect */
+.cam-scan {
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+  animation: camScan 2s linear infinite;
+}
+@keyframes camScan { 0%{top:0;opacity:1} 100%{top:100%;opacity:0.3} }
+.cam-noise { position: absolute; inset: 0; opacity: 0.05; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.cam-grid-overlay {
+  position: absolute; inset: 0;
+  background:
+    linear-gradient(rgba(0,212,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,212,255,0.04) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+.cam-label { position: absolute; bottom: 6px; left: 6px; font-size: 9px; color: var(--neon-cyan); letter-spacing: 1px; font-family: var(--font-display); }
+.cam-rec { position: absolute; top: 6px; right: 6px; display: flex; align-items: center; gap: 3px; }
+.cam-rec-dot { width: 5px; height: 5px; border-radius: 50%; background: #ff2d78; animation: blink 1s ease-in-out infinite; }
+.cam-rec-text { font-size: 8px; color: #ff2d78; font-family: var(--font-display); letter-spacing: 1px; }
+/* Motion detection box */
+.motion-box {
+  position: absolute; border: 1px solid var(--neon-cyan);
+  animation: motionPulse 1.5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes motionPulse { 0%,100%{border-color:rgba(0,212,255,0.4)} 50%{border-color:rgba(0,212,255,1)} }
+
+/* ── ALERTS ── */
+.alert-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.alert-item {
+  display: flex; align-items: flex-start; gap: 10px; padding: 9px 10px;
+  border-radius: 8px; background: rgba(0,212,255,0.04); border: 1px solid var(--glass-border);
+  transition: all 0.3s; cursor: pointer;
+}
+.alert-item:hover { background: rgba(0,212,255,0.08); }
+.alert-item.warning { background: rgba(255,183,0,0.04); border-color: rgba(255,183,0,0.2); }
+.alert-item.warning:hover { background: rgba(255,183,0,0.08); }
+.alert-item.danger { background: rgba(255,45,120,0.04); border-color: rgba(255,45,120,0.2); }
+.alert-item.danger:hover { background: rgba(255,45,120,0.08); }
+.alert-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--neon-cyan); margin-top: 3px; flex-shrink: 0; box-shadow: 0 0 6px var(--neon-cyan); }
+.alert-item.warning .alert-dot { background: var(--neon-amber); box-shadow: 0 0 6px var(--neon-amber); }
+.alert-item.danger .alert-dot { background: var(--neon-pink); box-shadow: 0 0 6px var(--neon-pink); animation: blink 0.8s infinite; }
+.alert-text { font-size: 11px; color: var(--text-secondary); flex: 1; }
+.alert-time { font-size: 10px; color: var(--text-muted); font-family: var(--font-display); flex-shrink: 0; }
+
+/* ── AUTOMATION ── */
+.auto-list { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.auto-item {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border-radius: 8px; background: rgba(168,85,247,0.04); border: 1px solid rgba(168,85,247,0.12);
+  transition: all 0.3s; cursor: pointer;
+}
+.auto-item:hover { background: rgba(168,85,247,0.08); border-color: rgba(168,85,247,0.25); }
+.auto-icon { font-size: 16px; }
+.auto-info { flex: 1; }
+.auto-name { font-size: 12px; font-weight: 500; color: var(--text-primary); }
+.auto-trigger { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
+.auto-active { width: 6px; height: 6px; border-radius: 50%; background: #00ff88; box-shadow: 0 0 6px #00ff88; }
+
+/* ── ENERGY BAR ── */
+.energy-bars { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.ebar { display: flex; align-items: center; gap: 8px; }
+.ebar-label { font-size: 11px; color: var(--text-secondary); width: 60px; flex-shrink: 0; }
+.ebar-track { flex: 1; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.06); overflow: hidden; }
+.ebar-fill { height: 100%; border-radius: 2px; transition: width 1s ease; }
+.ebar-val { font-size: 10px; font-family: var(--font-display); color: var(--text-muted); width: 32px; text-align: right; flex-shrink: 0; }
+
+/* ── MOOD PANEL ── */
+.mood-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 10px; }
+.mood-btn {
+  padding: 8px 4px; border-radius: 8px; text-align: center;
+  border: 1px solid var(--glass-border); background: rgba(255,255,255,0.02);
+  cursor: pointer; transition: all 0.3s; font-size: 11px; color: var(--text-muted);
+}
+.mood-btn:hover { background: rgba(0,212,255,0.08); border-color: var(--glass-border2); color: var(--text-primary); }
+.mood-btn.active { background: rgba(168,85,247,0.12); border-color: rgba(168,85,247,0.3); color: var(--neon-purple); }
+.mood-emoji { font-size: 18px; display: block; margin-bottom: 3px; }
+
+/* ── AI RESPONSE BUBBLE ── */
+.ai-response { display: none; position: fixed; bottom: 80px; right: 320px; width: 280px; z-index: 200; }
+.ai-response.show { display: block; animation: slideUp 0.3s ease; }
+@keyframes slideUp { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+.ai-bubble {
+  padding: 14px; border-radius: 14px;
+  background: rgba(10,5,30,0.95); border: 1px solid rgba(168,85,247,0.4);
+  box-shadow: 0 0 30px rgba(168,85,247,0.2); backdrop-filter: blur(20px);
+  font-size: 12px; color: var(--text-primary); line-height: 1.6;
+}
+.ai-bubble-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.ai-bubble-name { font-family: var(--font-display); font-size: 11px; color: var(--neon-purple); letter-spacing: 2px; }
+.ai-close { margin-left: auto; font-size: 14px; cursor: pointer; color: var(--text-muted); background: none; border: none; }
+
+/* ── TOAST ── */
+.toast-container { position: fixed; top: 70px; right: 20px; z-index: 300; display: flex; flex-direction: column; gap: 8px; }
+.toast {
+  padding: 12px 16px; border-radius: 10px; max-width: 280px;
+  background: rgba(3,8,18,0.95); border: 1px solid var(--glass-border);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5); backdrop-filter: blur(20px);
+  font-size: 12px; color: var(--text-primary); animation: toastIn 0.3s ease;
+  display: flex; align-items: center; gap: 8px;
+}
+@keyframes toastIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+.toast.success { border-color: rgba(0,255,136,0.3); }
+.toast.warning { border-color: rgba(255,183,0,0.3); }
+.toast-icon { font-size: 16px; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); }
+::-webkit-scrollbar-thumb { background: rgba(0,212,255,0.3); border-radius: 2px; }
+
+/* Responsive tweaks */
+@media (max-width: 1200px) { .main { grid-template-columns: 240px 1fr 260px; } }
+
+/* Existing CSS above */
+
+/* Responsive Fix */
+@media(max-width:768px){
+
+.ai-input-row{
+flex-wrap:wrap;
+}
+
+.ai-input{
+width:100%;
+}
+
+.ai-send{
+flex:1;
+}
+
+.ai-response{
+right:20px;
+left:20px;
+width:auto;
+}
+
+}
+
+</style>
+</head>
+<body>
+
+
+<div class="bg-grid"></div>
+<div class="bg-glow1"></div>
+<div class="bg-glow2"></div>
+<div class="scanlines"></div>
+<div class="particles" id="particles"></div>
+
+<div class="shell">
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <div class="logo">
+    <div class="logo-orb"></div>
+    NEUROHOME
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="setTab(this, 'dashboard')">Dashboard</button>
+    <button class="nav-tab" onclick="setTab(this, 'security')">Security</button>
+    <button class="nav-tab" onclick="setTab(this, 'energy')">Energy</button>
+    <button class="nav-tab" onclick="setTab(this, 'automation')">Automation</button>
+    <button class="nav-tab" onclick="setTab(this, 'scenes')">Scenes</button>
+  </div>
+
+  <div class="nav-right">
+    <div style="display:flex;align-items:center;gap:6px">
+      <div class="status-dot"></div>
+      <span class="status-label">ALL SYSTEMS ONLINE</span>
+    </div>
+    <div class="sys-time" id="clock">--:--:--</div>
+    <button class="security-btn" onclick="triggerSecurityMode()">🔒 ARM</button>
+  </div>
+</nav>
+
+<!-- MAIN 3-COLUMN LAYOUT -->
+<div class="main">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <div>
+      <div class="sidebar-section-title">Rooms</div>
+      <div class="room-list">
+        <div class="room-item active" onclick="selectRoom(this)">
+          <div class="room-icon">🏠</div>
+          <div class="room-info">
+            <div class="room-name">All Rooms</div>
+            <div class="room-meta">12 devices active</div>
+          </div>
+          <div class="room-badge">12</div>
+        </div>
+        <div class="room-item" onclick="selectRoom(this)">
+          <div class="room-icon">🛋️</div>
+          <div class="room-info">
+            <div class="room-name">Living Room</div>
+            <div class="room-meta">4 devices · 22°C</div>
+          </div>
+          <div class="room-badge">4</div>
+        </div>
+        <div class="room-item" onclick="selectRoom(this)">
+          <div class="room-icon">🛏️</div>
+          <div class="room-info">
+            <div class="room-name">Bedroom</div>
+            <div class="room-meta">3 devices · 20°C</div>
+          </div>
+          <div class="room-badge">3</div>
+        </div>
+        <div class="room-item" onclick="selectRoom(this)">
+          <div class="room-icon">🍳</div>
+          <div class="room-info">
+            <div class="room-name">Kitchen</div>
+            <div class="room-meta">2 devices · 24°C</div>
+          </div>
+          <div class="room-badge">2</div>
+        </div>
+        <div class="room-item" onclick="selectRoom(this)">
+          <div class="room-icon">🚿</div>
+          <div class="room-info">
+            <div class="room-name">Bathroom</div>
+            <div class="room-meta">1 device · 26°C</div>
+          </div>
+          <div class="room-badge">1</div>
+        </div>
+        <div class="room-item" onclick="selectRoom(this)">
+          <div class="room-icon">🚗</div>
+          <div class="room-info">
+            <div class="room-name">Garage</div>
+            <div class="room-meta">2 devices · 18°C</div>
+          </div>
+          <div class="room-badge">2</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-title">Home Status</div>
+      <div class="quick-stats">
+        <div class="stat-card">
+          <div class="stat-val" id="temp-stat">22°C</div>
+          <div class="stat-label">Avg Temp</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-val">68%</div>
+          <div class="stat-label">Humidity</div>
+        </div>
+        <div class="stat-card amber">
+          <div class="stat-val" id="power-stat">3.4kW</div>
+          <div class="stat-label">Power Use</div>
+        </div>
+        <div class="stat-card pink">
+          <div class="stat-val">0</div>
+          <div class="stat-label">Intruders</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sidebar-section-title">Weather</div>
+
+  <div class="weather-panel">
+
+    <div class="weather-top">
+
+      <div>
+
+        <div
+          class="weather-temp"
+          id="weatherTemp"
+        >
+          Loading...
+        </div>
+
+        <div
+          class="weather-desc"
+          id="weatherDesc"
+        >
+          Fetching weather...
+        </div>
+
+      </div>
+
+      <div
+        class="weather-icon"
+        id="weatherIcon"
+      >
+        ⛅
+      </div>
+
+    </div>
+
+    <div class="weather-extra">
+
+      <div class="weather-item">
+        Humidity
+        <span id="humidity">
+          --
+        </span>
+      </div>
+
+      <div class="weather-item">
+        Wind
+        <span id="wind">
+          --
+        </span>
+      </div>
+
+      <div class="weather-item">
+        Feels Like
+        <span id="feelsLike">
+          --
+        </span>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+    <div>
+      <div class="sidebar-section-title">NeuroBot AI</div>
+      <div class="ai-orb-section">
+        <div class="ai-orb-wrap">
+          <div class="ai-orb" onclick="activateAI()"></div>
+          <div class="ai-orb-rings"></div>
+        </div>
+        <div class="ai-name">NEUROBOT</div>
+        <div class="ai-waveform" id="waveform">
+          <div class="wave-bar" style="height:8px"></div>
+          <div class="wave-bar" style="height:14px"></div>
+          <div class="wave-bar" style="height:18px"></div>
+          <div class="wave-bar" style="height:22px"></div>
+          <div class="wave-bar" style="height:16px"></div>
+          <div class="wave-bar" style="height:12px"></div>
+          <div class="wave-bar" style="height:8px"></div>
+        </div>
+        <div class="ai-status-text" id="ai-status-txt">Monitoring all systems...</div>
+        <div class="ai-input-row">
+          <input
+class="ai-input"
+id="ai-input"
+placeholder="Command NeuroBot..."
+onkeydown="
+if(event.key==='Enter')
+sendAICommand()
+">
+
+<button
+class="ai-send"
+onclick="sendAICommand()">
+⚡
+</button>
+
+<button
+class="ai-send"
+onclick="startVoiceRecognition()">
+🎤
+</button>
+
+</div>
+
+    <div>
+      <div class="sidebar-section-title">Mood Lighting</div>
+      <div class="mood-grid">
+        <div class="mood-btn" onclick="setMood(this,'Energize')"><span class="mood-emoji">⚡</span>Energize</div>
+        <div class="mood-btn active" onclick="setMood(this,'Relax')"><span class="mood-emoji">🌙</span>Relax</div>
+        <div class="mood-btn" onclick="setMood(this,'Focus')"><span class="mood-emoji">🎯</span>Focus</div>
+        <div class="mood-btn" onclick="setMood(this,'Party')"><span class="mood-emoji">🎉</span>Party</div>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- CENTER PANEL -->
+  <main class="center">
+
+    <!-- STAT BAR -->
+    <div class="stat-bar">
+      <div class="stat-bar-card">
+        <div class="sbc-label">Active Devices</div>
+        <div class="sbc-val" id="active-count">12</div>
+        <div class="sbc-sub">of 18 total</div>
+      </div>
+      <div class="stat-bar-card purple">
+        <div class="sbc-label">Automations</div>
+        <div class="sbc-val">8</div>
+        <div class="sbc-sub">4 triggered today</div>
+      </div>
+      <div class="stat-bar-card cyan">
+        <div class="sbc-label">Today's Usage</div>
+        <div class="sbc-val">14.2</div>
+        <div class="sbc-sub">kWh · ↓12% vs avg</div>
+      </div>
+      <div class="stat-bar-card amber">
+        <div class="sbc-label">Security Score</div>
+        <div class="sbc-val">98</div>
+        <div class="sbc-sub">All clear · Armed</div>
+      </div>
+    </div>
+
+    <!-- DEVICE GRID -->
+    <div>
+      <div class="section-header">
+        <div class="section-title">Smart Devices</div>
+        <div class="section-count" id="device-count-label">12 Online</div>
+      </div>
+    </div>
+
+    <div class="device-grid" id="device-grid"></div>
+
+    <!-- ENERGY CHART -->
+    <div class="energy-panel">
+      <div class="energy-header">
+        <div class="section-title">Energy Analytics</div>
+        <div class="energy-kpi">
+          <div class="ekpi">
+            <div class="ekpi-val">14.2</div>
+            <div class="ekpi-label">kWh Today</div>
+          </div>
+          <div class="ekpi">
+            <div class="ekpi-val" style="color:var(--neon-purple)">₹142</div>
+            <div class="ekpi-label">Est. Cost</div>
+          </div>
+          <div class="ekpi">
+            <div class="ekpi-val" style="color:#00ff88">↓12%</div>
+            <div class="ekpi-label">vs Avg</div>
+          </div>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="energyChart"></canvas>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- RIGHT PANEL -->
+  <aside class="right-panel">
+
+    <!-- SECURITY FEEDS -->
+    <div class="right-section">
+      <div class="sidebar-section-title">Live Security Feeds</div>
+      <div class="security-grid">
+        <div class="cam-card">
+          <div class="cam-feed">
+            <div class="cam-noise"></div>
+            <div class="cam-grid-overlay"></div>
+            <div class="cam-scan"></div>
+            <div class="motion-box" style="top:30%;left:20%;width:25%;height:30%"></div>
+          </div>
+          <div class="cam-label">CAM-01 · FRONT</div>
+          <div class="cam-rec"><div class="cam-rec-dot"></div><span class="cam-rec-text">REC</span></div>
+        </div>
+        <div class="cam-card">
+          <div class="cam-feed">
+            <div class="cam-noise"></div>
+            <div class="cam-grid-overlay"></div>
+            <div class="cam-scan" style="animation-delay:-1s"></div>
+          </div>
+          <div class="cam-label">CAM-02 · BACK</div>
+          <div class="cam-rec"><div class="cam-rec-dot"></div><span class="cam-rec-text">REC</span></div>
+        </div>
+        <div class="cam-card">
+          <div class="cam-feed">
+            <div class="cam-noise"></div>
+            <div class="cam-grid-overlay"></div>
+            <div class="cam-scan" style="animation-delay:-0.5s"></div>
+          </div>
+          <div class="cam-label">CAM-03 · GARAGE</div>
+          <div class="cam-rec"><div class="cam-rec-dot"></div><span class="cam-rec-text">REC</span></div>
+        </div>
+        <div class="cam-card">
+          <div class="cam-feed">
+            <div class="cam-noise"></div>
+            <div class="cam-grid-overlay"></div>
+            <div class="cam-scan" style="animation-delay:-1.5s"></div>
+          </div>
+          <div class="cam-label">CAM-04 · LOBBY</div>
+          <div class="cam-rec"><div class="cam-rec-dot"></div><span class="cam-rec-text">REC</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALERTS -->
+    <div class="right-section">
+      <div class="sidebar-section-title">System Alerts</div>
+      <div class="alert-list">
+        <div class="alert-item">
+          <div class="alert-dot"></div>
+          <div class="alert-text">All systems nominal. Home secured.</div>
+          <div class="alert-time">Now</div>
+        </div>
+        <div class="alert-item warning">
+          <div class="alert-dot"></div>
+          <div class="alert-text">AC running 3+ hours. Energy tip available.</div>
+          <div class="alert-time">2h ago</div>
+        </div>
+        <div class="alert-item">
+          <div class="alert-dot"></div>
+          <div class="alert-text">Motion detected at front door.</div>
+          <div class="alert-time">3h ago</div>
+        </div>
+        <div class="alert-item">
+          <div class="alert-dot"></div>
+          <div class="alert-text">Good Morning routine executed.</div>
+          <div class="alert-time">7h ago</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DEVICE ENERGY BREAKDOWN -->
+    <div class="right-section">
+      <div class="sidebar-section-title">Energy Breakdown</div>
+      <div class="energy-bars">
+        <div class="ebar">
+          <div class="ebar-label">AC Unit</div>
+          <div class="ebar-track"><div class="ebar-fill" style="width:75%;background:linear-gradient(90deg,#a855f7,#7c3aed)"></div></div>
+          <div class="ebar-val">900W</div>
+        </div>
+        <div class="ebar">
+          <div class="ebar-label">Smart TV</div>
+          <div class="ebar-track"><div class="ebar-fill" style="width:55%;background:linear-gradient(90deg,#00d4ff,#0080aa)"></div></div>
+          <div class="ebar-val">120W</div>
+        </div>
+        <div class="ebar">
+          <div class="ebar-label">Lighting</div>
+          <div class="ebar-track"><div class="ebar-fill" style="width:35%;background:linear-gradient(90deg,#ffb700,#cc8800)"></div></div>
+          <div class="ebar-val">48W</div>
+        </div>
+        <div class="ebar">
+          <div class="ebar-label">Fan</div>
+          <div class="ebar-track"><div class="ebar-fill" style="width:20%;background:linear-gradient(90deg,#06ffd4,#00aa88)"></div></div>
+          <div class="ebar-val">45W</div>
+        </div>
+        <div class="ebar">
+          <div class="ebar-label">Speaker</div>
+          <div class="ebar-track"><div class="ebar-fill" style="width:12%;background:linear-gradient(90deg,#ff2d78,#aa1050)"></div></div>
+          <div class="ebar-val">15W</div>
+        </div>
+        <div class="ebar">
+          <div class="ebar-label">Cameras</div>
+          <div class="ebar-track"><div class="ebar-fill" style="width:8%;background:linear-gradient(90deg,#888,#444)"></div></div>
+          <div class="ebar-val">6W</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AUTOMATIONS -->
+    <div class="right-section">
+      <div class="sidebar-section-title">Active Automations</div>
+      <div class="auto-list">
+        <div class="auto-item">
+          <div class="auto-icon">🌅</div>
+          <div class="auto-info">
+            <div class="auto-name">Good Morning Routine</div>
+            <div class="auto-trigger">Triggers at 7:00 AM</div>
+          </div>
+          <div class="auto-active"></div>
+        </div>
+        <div class="auto-item">
+          <div class="auto-icon">🌙</div>
+          <div class="auto-info">
+            <div class="auto-name">Sleep Mode</div>
+            <div class="auto-trigger">Triggers at 10:30 PM</div>
+          </div>
+          <div class="auto-active"></div>
+        </div>
+        <div class="auto-item">
+          <div class="auto-icon">🏃</div>
+          <div class="auto-info">
+            <div class="auto-name">Away Mode</div>
+            <div class="auto-trigger">On exit detection</div>
+          </div>
+          <div class="auto-active"></div>
+        </div>
+        <div class="auto-item">
+          <div class="auto-icon">⚡</div>
+          <div class="auto-info">
+            <div class="auto-name">Energy Saver</div>
+            <div class="auto-trigger">Peak hours 2–6 PM</div>
+          </div>
+          <div class="auto-active"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI SUGGESTIONS -->
+    <div class="right-section">
+      <div class="sidebar-section-title">AI Suggestions</div>
+      <div class="alert-list">
+        <div class="alert-item" onclick="applyAISuggestion('ac_reduce')">
+          <div class="alert-dot" style="background:var(--neon-purple);box-shadow:0 0 6px var(--neon-purple)"></div>
+          <div class="alert-text">💡 AC idle 3h. Raise to 22°C to save ₹18.</div>
+          <div class="alert-time">Apply</div>
+        </div>
+        <div class="alert-item" onclick="applyAISuggestion('tv_idle')">
+          <div class="alert-dot" style="background:var(--neon-amber);box-shadow:0 0 6px var(--neon-amber)"></div>
+          <div class="alert-text">📺 TV on but no activity. Turn off?</div>
+          <div class="alert-time">Apply</div>
+        </div>
+        <div class="alert-item" onclick="applyAISuggestion('curtain_open')">
+          <div class="alert-dot" style="background:var(--neon-cyan);box-shadow:0 0 6px var(--neon-cyan)"></div>
+          <div class="alert-text">🪟 Open curtains — reduce lighting load.</div>
+          <div class="alert-time">Apply</div>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+</div>
+</div>
+
+<!-- AI Response Bubble -->
+<div class="ai-response" id="ai-response">
+  <div class="ai-bubble">
+    <div class="ai-bubble-header">
+      <div class="logo-orb" style="width:18px;height:18px;"></div>
+      <div class="ai-bubble-name">NEUROBOT</div>
+      <button class="ai-close" onclick="closeAI()">✕</button>
+    </div>
+    <div id="ai-response-text">Processing your command...</div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// ── PARTICLES ──
+const particles = document.getElementById('particles');
+for (let i = 0; i < 30; i++) {
+  const p = document.createElement('div');
+  p.className = 'particle';
+  p.style.cssText = `left:${Math.random()*100}%;animation-duration:${8+Math.random()*12}s;animation-delay:${Math.random()*15}s;background:${Math.random()>.5?'var(--neon-cyan)':'var(--neon-purple)'};opacity:0`;
+  particles.appendChild(p);
+}
+
+// ── CLOCK ──
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toTimeString().slice(0,8);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── DEVICE STATE ──
+
+const deviceColors = ['blue','amber','purple','blue','pink','blue','purple','amber','blue'];
+
+function updateSlider(input, idx) {
+  const val = input.value;
+  input.style.setProperty('--val', val + '%');
+  const el = document.getElementById('slval-'+idx);
+  if (el) el.textContent = val + '%';
+}
+
+function updateTempSlider(input, idx) {
+  const val = parseInt(input.value);
+  const pct = ((val - 16) / 14 * 100).toFixed(0);
+  input.style.setProperty('--val', pct + '%');
+  const el = document.getElementById('slval-'+idx);
+  if (el) el.textContent = val + '°C';
+}
+
+// ── ROOMS ──
+function selectRoom(el) {
+  document.querySelectorAll('.room-item').forEach(r => r.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── TABS ──
+function setTab(el, tab) {
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+}
+
+// ── MOOD ──
+function setMood(el, mood) {
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  const moods = {
+    Energize: { glow1: 'rgba(255,183,0,0.07)', glow2: 'rgba(255,45,120,0.08)' },
+    Relax: { glow1: 'rgba(0,212,255,0.07)', glow2: 'rgba(168,85,247,0.08)' },
+    Focus: { glow1: 'rgba(0,255,136,0.06)', glow2: 'rgba(0,212,255,0.06)' },
+    Party: { glow1: 'rgba(255,45,120,0.09)', glow2: 'rgba(168,85,247,0.09)' }
+  };
+  document.querySelector('.bg-glow1').style.background = `radial-gradient(ellipse, ${moods[mood].glow1} 0%, transparent 70%)`;
+  document.querySelector('.bg-glow2').style.background = `radial-gradient(ellipse, ${moods[mood].glow2} 0%, transparent 70%)`;
+  showToast('🎨 ' + mood + ' mode activated', 'success');
+}
+
+// ── AI ──
+const aiResponses = {
+  'turn off all lights': 'Turning off all lights in every room. Dimming complete. 4 fixtures offline.',
+  'activate security mode': 'Security mode ARMED. All cameras active, motion sensors enabled, smart locks secured. Alert threshold: HIGH.',
+  'set temperature to 22': 'Setting AC to 22°C across all units. Estimated 15 min to reach target. Saving mode engaged.',
+  'good morning': 'Good morning! Current home temp is 22°C. All systems nominal. Opening living room curtains and setting lights to warm daylight. Your coffee schedule is activated.',
+  'energy report': 'Today\'s energy usage: 14.2 kWh, ₹142 estimated cost. You\'re 12% below your weekly average. AC is the top consumer at 900W.',
+  'who is at the door': 'Front camera analysis: No person detected at main entrance. Last motion was 3 hours ago at 14:32.',
+  'default': 'Command received. Processing your request using NeuroHome AI engine. All connected devices are responding normally.'
+};
+
+function sendAICommand() {
+  const input = document.getElementById('ai-input');
+  const cmd = input.value.trim().toLowerCase();
+  if (!cmd) return;
+
+  let response = aiResponses.default;
+  for (const key of Object.keys(aiResponses)) {
+    if (key !== 'default' && cmd.includes(key.split(' ')[0])) {
+      response = aiResponses[key]; break;
+    }
+  }
+
+  document.getElementById('ai-status-txt').textContent = 'Processing: "' + input.value + '"';
+  document.getElementById('ai-response-text').textContent = response;
+  document.getElementById('ai-response').classList.add('show');
+  input.value = '';
+  setTimeout(() => document.getElementById('ai-status-txt').textContent = 'Ready for commands...', 3000);
+}
+
+function activateAI() {
+  document.getElementById('ai-status-txt').textContent = 'NeuroBot activated!';
+  document.getElementById('ai-response-text').textContent = 'Hello! I\'m NeuroBot, your AI home assistant. I can control all smart devices, optimize energy, manage security, and automate your routines. What can I do for you?';
+  document.getElementById('ai-response').classList.add('show');
+  setTimeout(() => document.getElementById('ai-status-txt').textContent = 'Listening...', 2000);
+}
+
+function closeAI() {
+  document.getElementById('ai-response').classList.remove('show');
+  document.getElementById('ai-status-txt').textContent = 'Monitoring all systems...';
+}
+
+// ── SECURITY MODE ──
+function triggerSecurityMode() {
+  document.body.style.transition = 'filter 0.5s';
+  document.body.style.filter = 'hue-rotate(290deg)';
+  showToast('🔴 SECURITY MODE ARMED - All sensors active', 'warning');
+  setTimeout(() => { document.body.style.filter = ''; }, 2000);
+  document.getElementById('ai-response-text').textContent = 'SECURITY ALERT: Home armed. All entry points secured. Camera surveillance at maximum sensitivity. Emergency services on standby.';
+  document.getElementById('ai-response').classList.add('show');
+}
+
+// ── AI SUGGESTIONS ──
+function applyAISuggestion(type) {
+  const msgs = {
+    ac_reduce: '✅ AC temperature raised to 22°C. Estimated savings: ₹18',
+    tv_idle: '📺 Smart TV powered off. Energy saved.',
+    curtain_open: '🪟 Curtains fully opened. Lighting reduced by 30%.'
+  };
+  showToast(msgs[type] || 'Applied!', 'success');
+}
+
+// ── TOAST ──
+function showToast(msg, type = 'success') {
+  const container = document.getElementById('toasts');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  const icons = { success: '✅', warning: '⚠️', info: 'ℹ️' };
+  toast.innerHTML = `<span class="toast-icon">${icons[type] || '✅'}</span><span>${msg}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.transition = 'all 0.3s'; toast.style.opacity = '0'; toast.style.transform = 'translateX(100%)'; setTimeout(() => toast.remove(), 300); }, 3500);
+}
+
+// ── ENERGY CHART ──
+const ctx = document.getElementById('energyChart').getContext('2d');
+const labels = ['12am','2','4','6','8','10','12pm','2','4','6','8','10'];
+const usageData = [0.8,0.4,0.3,0.5,1.2,2.1,2.8,3.4,2.9,3.1,2.4,1.8];
+const predicted = [null,null,null,null,null,null,null,null,null,3.2,2.6,1.9];
+
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels,
+    datasets: [
+      {
+        label: 'Usage (kW)',
+        data: usageData,
+        borderColor: '#00d4ff',
+        backgroundColor: 'rgba(0,212,255,0.08)',
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 3,
+        pointBackgroundColor: '#00d4ff',
+        pointBorderColor: 'transparent',
+      },
+      {
+        label: 'AI Prediction',
+        data: predicted,
+        borderColor: '#a855f7',
+        backgroundColor: 'rgba(168,85,247,0.05)',
+        borderWidth: 2,
+        borderDash: [4,4],
+        fill: false,
+        tension: 0.4,
+        pointRadius: 3,
+        pointBackgroundColor: '#a855f7',
+        pointBorderColor: 'transparent',
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: 'rgba(6,18,36,0.95)',
+        borderColor: 'rgba(0,212,255,0.3)',
+        borderWidth: 1,
+        titleColor: '#00d4ff',
+        bodyColor: '#7eb8d4',
+        padding: 10,
+        callbacks: { label: ctx => ' ' + ctx.raw + ' kW' }
+      }
+    },
+    scales: {
+      x: {
+        grid: { color: 'rgba(0,212,255,0.04)', borderColor: 'transparent' },
+        ticks: { color: '#3a6080', font: { size: 10, family: 'Rajdhani' } }
+      },
+      y: {
+        grid: { color: 'rgba(0,212,255,0.04)', borderColor: 'transparent' },
+        ticks: { color: '#3a6080', font: { size: 10, family: 'Rajdhani' }, callback: v => v + 'kW' }
+      }
+    },
+    interaction: { mode: 'index', intersect: false }
+  }
+});
+
+// ── SIMULATE LIVE SENSOR DATA ──
+setInterval(() => {
+  const temp = (21 + Math.random() * 3).toFixed(1);
+  const power = (3.0 + Math.random() * 0.8).toFixed(1);
+  document.getElementById('temp-stat').textContent = temp + '°C';
+  document.getElementById('power-stat').textContent = power + 'kW';
+}, 4000);
+
+// Animate rings on load
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    showToast('🏠 NeuroHome AI online — All 18 devices connected', 'success');
+  }, 800);
+});
+</script>
+
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+
+<script>
+
+const socket = io("http://localhost:8000");
+
+async function fetchDevices() {
+
+    try {
+
+        const response =
+        await fetch("http://localhost:8000/api/devices");
+
+        const devices = await response.json();
+
+        const deviceGrid =
+        document.getElementById("device-grid");
+
+        deviceGrid.innerHTML = "";
+
+        let activeDevices = 0;
+
+        devices.forEach((device, index) => {
+
+            if(device.status) activeDevices++;
+
+            const icons = [
+                "💡","🌀","❄️","📺","📷","🪟",
+                "🔒","🔊","🧊","🔥","🧺","🚪",
+                "🧹","🚗","🚿","🌬️","☕","🌱"
+            ];
+
+            deviceGrid.innerHTML += `
+
+            <div class="device-card ${device.status ? 'on' : ''}">
+
+                <div class="dc-top">
+
+                    <div class="dc-icon">
+                        ${icons[index % icons.length]}
+                    </div>
+
+                    <div
+                      class="dc-toggle ${device.status ? 'on' : ''}"
+                      onclick="toggleDevice(
+                        '${device._id}',
+                        ${device.status}
+                      )">
+                    </div>
+
+                </div>
+
+                <div class="dc-name">
+                    ${device.name}
+                </div>
+
+                <div class="dc-room">
+                    ${device.room}
+                </div>
+
+                <div class="dc-status">
+                    ${device.status ? '● Active' : '● Offline'}
+                </div>
+
+                <div class="dc-ring-wrap">
+
+                    <div>
+
+                        <div class="dc-power-val">
+                            ${device.powerUsage}W
+                        </div>
+
+                        <div class="dc-power-info">
+                            Power Usage
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+            `;
+
+        });
+
+        document.getElementById("active-count")
+        .textContent = activeDevices;
+
+        document.getElementById("device-count-label")
+        .textContent = `${activeDevices} Online`;
+
+    } catch (error) {
+
+        console.log(error);
+
+    }
+
+}
+
+async function toggleDevice(id, currentStatus) {
+
+    try {
+
+        await fetch(
+            `http://localhost:8000/api/devices/${id}`,
+            {
+                method: "PUT",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+                    status: !currentStatus
+                })
+            }
+        );
+
+        socket.emit("deviceToggle", {
+            id,
+            status: !currentStatus
+        });
+
+    } catch (error) {
+
+        console.log(error);
+
+    }
+
+}
+
+socket.on("deviceUpdated", () => {
+
+    fetchDevices();
+
+});
+
+fetchDevices();
+
+</script>
+
+<script>
+async function loadWeather() {
+
+  const apiKey = "63870340981390f89748e6a9886e251f";
+  const city = "Kolkata";
+
+  try {
+
+    const response = await fetch(
+      `https://api.openweathermap.org/data/2.5/weather?q=Kolkata&units=metric&appid=63870340981390f89748e6a9886e251f`
+    );
+
+    const data = await response.json();
+
+    console.log(data);
+
+    document.getElementById("weatherTemp").innerHTML =
+      Math.round(data.main.temp) + "°C";
+
+    document.getElementById("weatherDesc").innerHTML =
+      data.weather[0].description + " · " + data.name;
+
+    document.getElementById("humidity").innerHTML =
+      data.main.humidity + "%";
+
+    document.getElementById("wind").innerHTML =
+      data.wind.speed + " km/h";
+
+    document.getElementById("feelsLike").innerHTML =
+      Math.round(data.main.feels_like) + "°C";
+
+    const weatherMain = data.weather[0].main;
+
+    let icon = "⛅";
+
+    if (weatherMain === "Clouds") {
+      icon = "☁️";
+    }
+    else if (weatherMain === "Rain") {
+      icon = "🌧️";
+    }
+    else if (weatherMain === "Clear") {
+      icon = "☀️";
+    }
+    else if (weatherMain === "Thunderstorm") {
+      icon = "⛈️";
+    }
+    else if (weatherMain === "Snow") {
+      icon = "❄️";
+    }
+
+    document.getElementById("weatherIcon").innerHTML = icon;
+
+  } catch (error) {
+
+    console.log(error);
+
+    document.getElementById("weatherTemp").innerHTML =
+      "--";
+
+    document.getElementById("weatherDesc").innerHTML =
+      "Weather unavailable";
+
+  }
+}
+
+loadWeather();
+</script>
+<script>
+  // ───────── VOICE AI SYSTEM ─────────
+
+const recognition =
+new (
+window.SpeechRecognition ||
+window.webkitSpeechRecognition
+)();
+
+recognition.lang = "en-US";
+
+recognition.continuous = false;
+
+recognition.interimResults = false;
+
+
+// ───────── AI SPEAK FUNCTION ─────────
+
+function speak(text){
+
+const speech =
+new SpeechSynthesisUtterance(text);
+
+speech.rate = 1;
+
+speech.pitch = 1;
+
+speech.volume = 1;
+
+speech.lang = "en-US";
+
+speechSynthesis.speak(speech);
+
+}
+
+
+// ───────── START VOICE LISTENING ─────────
+
+function startVoiceRecognition(){
+
+document.getElementById(
+"ai-status-txt"
+).innerText =
+"🎤 Listening...";
+
+recognition.start();
+
+}
+
+
+// ───────── VOICE RESULT ─────────
+
+recognition.onresult = function(event){
+
+const command =
+event.results[0][0]
+.transcript
+.toLowerCase();
+
+document.getElementById(
+"ai-input"
+).value = command;
+
+document.getElementById(
+"ai-status-txt"
+).innerText =
+`Command: ${command}`;
+
+processVoiceCommand(command);
+
+};
+
+
+// ───────── PROCESS COMMANDS ─────────
+
+async function processVoiceCommand(command){
+
+let responseText =
+"Command executed";
+
+
+if(command.includes("turn off")){
+
+responseText =
+"Turning off devices";
+
+}
+
+
+if(command.includes("turn on")){
+
+responseText =
+"Turning on devices";
+
+}
+
+
+if(command.includes("security")){
+
+responseText =
+"Security mode activated";
+
+triggerSecurityMode();
+
+}
+
+
+if(command.includes("night mode")){
+
+responseText =
+"Night mode activated";
+
+document.body.style.filter =
+"brightness(0.7)";
+
+}
+
+
+if(command.includes("party mode")){
+
+responseText =
+"Party mode enabled";
+
+document.body.style.filter =
+"hue-rotate(120deg)";
+
+}
+
+
+if(command.includes("normal mode")){
+
+responseText =
+"Normal mode restored";
+
+document.body.style.filter =
+"none";
+
+}
+
+
+// ───────── SHOW AI RESPONSE ─────────
+
+document.getElementById(
+"ai-response-text"
+).innerText =
+responseText;
+
+document.getElementById(
+"ai-response"
+).classList.add("show");
+
+
+// ───────── UPDATE STATUS ─────────
+
+document.getElementById(
+"ai-status-txt"
+).innerText =
+responseText;
+
+
+// ───────── SPEAK RESPONSE ─────────
+
+speak(responseText);
+
+
+// ───────── SHOW TOAST ─────────
+
+showToast(
+"🎤 " + responseText,
+"success"
+);
+
+}
+
+
+// ───────── VOICE ERRORS ─────────
+
+recognition.onerror = function(event){
+
+console.log(event.error);
+
+document.getElementById(
+"ai-status-txt"
+).innerText =
+"Voice recognition failed";
+
+showToast(
+"🎤 Microphone error",
+"warning"
+);
+
+};
+
+
+// ───────── VOICE END ─────────
+
+recognition.onend = function(){
+
+document.getElementById(
+"ai-status-txt"
+).innerText =
+"Monitoring all systems...";
+
+};
+</script>
+</script>
+</body>
+</html>
